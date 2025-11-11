@@ -16,15 +16,18 @@
     opacity: 0;
     transition: opacity 1s ease, transform 1s ease;
     transform: translateY(20px);
-    white-space: pre-line; /* preserves line breaks */
+    white-space: pre-line;
   }
   #message.show {
     opacity: 1;
     transform: translateY(0);
   }
-  button {
-    padding: 10px 20px;
+  input, button {
+    padding: 10px;
     font-size: 1em;
+    margin: 5px;
+  }
+  button {
     cursor: pointer;
   }
 </style>
@@ -34,41 +37,66 @@
 <h1>Welcome to My AWS Web Application</h1>
 <p>This is a simple starting page hosted on AWS.</p>
 
-<button id="showMessageBtn">Show Message</button>
+<!-- Input for user name -->
+<input type="text" id="userName" placeholder="Enter your name">
+<button id="showMessageBtn">Show Personalized Message</button>
+
 <div id="message"></div>
 
 <script>
 const button = document.getElementById('showMessageBtn');
 const messageDiv = document.getElementById('message');
+const userNameInput = document.getElementById('userName');
 
-// ✅ Your actual Lambda API URL
-const apiUrl = 'https://89buu4pknd.execute-api.eu-north-1.amazonaws.com/prod/message';
+// Base URL of your API Gateway
+const baseUrl = 'https://89buu4pknd.execute-api.eu-north-1.amazonaws.com/prod';
 
-button.addEventListener('click', async () => {
+// Function to fetch the original message (optional)
+async function fetchOriginalMessage() {
     try {
-        const response = await fetch(apiUrl, { method: 'GET' });
-        
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-
+        const response = await fetch(`${baseUrl}/message`);
         const data = await response.json();
-
-        // Combine your Lambda JSON into a single string
         const msg = `${data.greeting}\n${data.info}\n${data.tip}`;
         messageDiv.textContent = msg;
-
-        // Trigger animation
         messageDiv.classList.add('show');
-
-        // Reset animation after 3 seconds so you can click again
         setTimeout(() => messageDiv.classList.remove('show'), 3000);
-
     } catch (error) {
-        console.error('Error fetching message:', error);
+        console.error(error);
         messageDiv.textContent = 'Oops! Something went wrong.';
         messageDiv.classList.add('show');
         setTimeout(() => messageDiv.classList.remove('show'), 3000);
+    }
+}
+
+// Function to fetch personalized message
+async function fetchPersonalMessage(name) {
+    try {
+        const url = `${baseUrl}/personal-message?name=${encodeURIComponent(name)}`;
+        const response = await fetch(url);
+
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        const data = await response.json();
+        const msg = `${data.greeting}\n${data.info}\n${data.tip}`;
+        messageDiv.textContent = msg;
+        messageDiv.classList.add('show');
+        setTimeout(() => messageDiv.classList.remove('show'), 3000);
+
+    } catch (error) {
+        console.error(error);
+        messageDiv.textContent = 'Oops! Something went wrong.';
+        messageDiv.classList.add('show');
+        setTimeout(() => messageDiv.classList.remove('show'), 3000);
+    }
+}
+
+// Button click event
+button.addEventListener('click', () => {
+    const name = userNameInput.value.trim();
+    if (name) {
+        fetchPersonalMessage(name);
+    } else {
+        fetchOriginalMessage();
     }
 });
 </script>
